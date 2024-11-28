@@ -50,18 +50,6 @@
             text-align: center;
         }
 
-        .form-group {
-            margin-bottom: 10px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
-        }
-
         .btn {
             display: inline-block;
             background-color: #007bff;
@@ -91,8 +79,6 @@
                     <th>Shop Name</th>
                     <th>Gmail ID</th>
                     <th>Order Details</th>
-                    <th>Unavailable Items</th>
-                    <th>Message to User</th>
                     <th>Status</th>
                     <th>Action</th>
                 </tr>
@@ -108,7 +94,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-firestore.js"></script>
     <script>
         // Your web app's Firebase configuration
-         const firebaseConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyBV3grYDi6UvOhRHxBIFfge59hGTyoBawI",
             authDomain: "orders-1abed.firebaseapp.com",
             projectId: "orders-1abed",
@@ -117,20 +103,17 @@
             appId: "1:559549966240:web:12cd579400ac1310b726c5"
         };
 
-
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        // Initialize Firestore
         const db = firebase.firestore();
 
         const ordersTable = document.getElementById('orders-table').getElementsByTagName('tbody')[0];
         const errorMessage = document.getElementById('error-message');
 
-        function updateOrderStatus(orderId, newStatus, unavailableItems, messageToUser) {
+        // Update the status of an order
+        function updateOrderStatus(orderId, newStatus) {
             db.collection('orders').doc(orderId).update({
-                status: newStatus,
-                unavailableItems: unavailableItems || null,
-                messageToUser: messageToUser || null
+                status: newStatus
             }).then(() => {
                 loadOrders();
             }).catch((error) => {
@@ -138,6 +121,7 @@
             });
         }
 
+        // Load orders from Firebase Firestore and display them in the table
         function loadOrders() {
             db.collection('orders').orderBy('createdAt', 'desc').get().then((querySnapshot) => {
                 ordersTable.innerHTML = '';
@@ -149,14 +133,12 @@
                     row.insertCell(1).textContent = order.name;
                     row.insertCell(2).textContent = order.email;
                     row.insertCell(3).textContent = order.order;
-                    row.insertCell(4).textContent = order.unavailableItems || 'None';
-                    row.insertCell(5).textContent = order.messageToUser || 'No message';
-                    row.insertCell(6).textContent = order.status || 'Pending';
+                    row.insertCell(4).textContent = order.status || 'Placed';
 
-                    const actionCell = row.insertCell(7);
+                    const actionCell = row.insertCell(5);
                     const statusDropdown = document.createElement('select');
                     statusDropdown.className = 'status-dropdown';
-                    ['Pending', 'Processing', 'Shipped', 'Completed', 'Cancelled'].forEach(status => {
+                    ['Placed', 'Processing', 'Shipped', 'Delivered'].forEach(status => {
                         const option = document.createElement('option');
                         option.value = status;
                         option.textContent = status;
@@ -165,11 +147,10 @@
                         }
                         statusDropdown.appendChild(option);
                     });
+
                     statusDropdown.onchange = () => {
                         const newStatus = statusDropdown.value;
-                        const unavailableItems = prompt('Enter unavailable items (if any):');
-                        const messageToUser = prompt('Enter message to user (if any):');
-                        updateOrderStatus(orderId, newStatus, unavailableItems, messageToUser);
+                        updateOrderStatus(orderId, newStatus);
                     };
                     actionCell.appendChild(statusDropdown);
                 });
@@ -178,6 +159,7 @@
             });
         }
 
+        // Clear all orders from Firestore
         function clearOrders() {
             if (confirm("Are you sure you want to clear all orders? This action cannot be undone.")) {
                 db.collection('orders').get().then((querySnapshot) => {
